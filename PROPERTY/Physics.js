@@ -15,21 +15,12 @@
 
 	PROPERTY.Physics.prototype.apply = function()
 	{
-		if(this.draw)
-		{
-			cosmos2D.space.render_structure()
-			this.bounding_box.draw()
-		}
+		cosmos2D.space.render_structure()
+		this.bounding_box.draw()
 	}
 
-	PROPERTY.Physics.prototype.draw_scene = function()
+	PROPERTY.Physics.prototype.on_collision = function(scene_object)
 	{
-		this.draw = !this.draw
-	}
-
-	PROPERTY.Physics.prototype.on_collision = function()
-	{
-		console.log('collision!')
 	}
 
 }(window.cosmos2D = window.cosmos2D || new Object()));

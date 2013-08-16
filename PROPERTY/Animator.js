@@ -7,7 +7,7 @@
 		this.parse_asset(entity, asset, {
 			animation: '',
 			frames: 0,
-			fps: cosmos2D.time.fps,
+			fps: cosmos2D.loop.fps,
 			target: 'Model[model]',
 			iterator: 0,
 			frame_counter: 0,
@@ -19,18 +19,13 @@
 		}
 	}
 
-	PROPERTY.Animator.prototype.apply = function()
-	{
-		
-	}
-
 	PROPERTY.Animator.prototype.play = function()
 	{
 		if(this.original == undefined)
 		{
 			this.original = this.target()
 		}
-		this.frameskip = cosmos2D.time.fps / this.fps
+		this.frameskip = cosmos2D.loop.fps / this.fps
 		if(this.frame_counter >= this.frameskip)
 		{
 			this.frame_counter = 0

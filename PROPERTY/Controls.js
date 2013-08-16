@@ -18,10 +18,6 @@
 		this.stop_shooting_event = new cosmos2D.CORE.Event_handler()
 	}
 
-	PROPERTY.Controls.prototype.apply = function()
-	{
-	}
-
 	PROPERTY.Controls.prototype.active = function(keyName)
 	{
 		switch(keyName)

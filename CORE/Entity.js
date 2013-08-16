@@ -14,10 +14,10 @@
 		this.id = id
 		this.assets = assets
 
-		this.time_callback = new cosmos2D.PROPERTY.Unordered_callback()
+		// this.time_callback = new cosmos2D.PROPERTY.Unordered_callback()
 
 		// Adding new entity into Teserakt for easy access
-		cosmos2D.memory.world.insert(id, this)
+		cosmos2D.memory.universe.insert(id, this)
 
 		// Creating entity's properties
 		for(asset in assets)

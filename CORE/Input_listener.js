@@ -13,7 +13,7 @@
 		this.pressed_event = new cosmos2D.CORE.Event_handler()
 		this.released_event = new cosmos2D.CORE.Event_handler()
 		this.active_event = new cosmos2D.CORE.Event_handler()
-		cosmos2D.time.callback.subscribe(this, "active")
+		cosmos2D.loop.callback.subscribe(this, "active")
 	}
 
 	CORE.Input_listener.prototype.clear = function(key)

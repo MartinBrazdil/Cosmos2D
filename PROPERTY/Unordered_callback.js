@@ -6,7 +6,7 @@
 	{
 		this.array = new Array()
 		is_unlocked ? this.is_unlocked = true : this.is_unlocked = false
-		cosmos2D.time.callback.subscribe(this, 'apply')
+		cosmos2D.loop.callback.subscribe(this, 'apply')
 	}
 
 	PROPERTY.Unordered_callback.prototype.insert = function(object, method)

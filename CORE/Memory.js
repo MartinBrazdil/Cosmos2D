@@ -5,7 +5,7 @@
 	CORE.Memory = function()
 	{
 		this.data  = new Object()
-		this.world = new cosmos2D.ADT.Teserakt()
+		this.universe = new cosmos2D.ADT.Teserakt()
 	}
 
 	CORE.Memory.prototype.image = function(path)

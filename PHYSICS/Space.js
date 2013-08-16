@@ -5,8 +5,8 @@
 	PHYSICS.Space = function()
 	{
 		this.canvas = cosmos2D.renderer.canvas
-		console.log(this.canvas.height, this.canvas.width)
-	    this.scene = new cosmos2D.ADT.Quad_tree(this.canvas.width, this.canvas.height, 1, 1)
+	    this.scene = new cosmos2D.ADT.Quad_tree(this.canvas.width, this.canvas.height, 2, 10)
+		cosmos2D.loop.callback.subscribe(this, 'update_scene')
 	}
 
 	PHYSICS.Space.prototype.add = function(scene_object)

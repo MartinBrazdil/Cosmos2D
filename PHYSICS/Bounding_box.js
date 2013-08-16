@@ -4,10 +4,8 @@
 
 	PHYSICS.Bounding_box = function(owner, bounding_box)
 	{
-		console.log(owner)
 		this.owner = owner
 		this.bounding_box = bounding_box
-		console.log(this.owner.x(), this.owner.y())
 	}
 
 	PHYSICS.Bounding_box.prototype.owner_x = function()
@@ -99,7 +97,6 @@
 	{
 		cosmos2D.renderer.context.save()
 		cosmos2D.renderer.context.beginPath()
-		console.log(this.owner_x(), this.owner_y())
 		cosmos2D.renderer.context.moveTo(this.bl_p().x, this.bl_p().y)
 		cosmos2D.renderer.context.lineTo(this.tl_p().x, this.tl_p().y)
 		cosmos2D.renderer.context.lineTo(this.tr_p().x, this.tr_p().y)

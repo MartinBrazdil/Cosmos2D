@@ -52,7 +52,6 @@
         {
             // tady by se to mohlo zlepsit teda...
             this.root.remove_scene_object(this.scene_objects[i], this.root)
-            this.scene_objects[i].update(time)
             this.root.add_scene_object(this, this.scene_objects[i])
         }
     }
@@ -129,7 +128,7 @@
     {
         for(var i = 0; i < this.nodes.length; i++)
         {
-            if(this.nodes[i] instanceof Inner_node)
+            if(this.nodes[i] instanceof cosmos2D.ADT.Quad_tree.prototype.Inner_node)
             {
                 return false // Does not contain only leaves
             }
@@ -236,7 +235,7 @@
         {
             if(this.parent_node.depth > tree.max_depth)
             {
-                // console.log('scene full, undefined behaviour!', scene_object, tree.collision_event_listeners[scene_object])
+                console.log('scene full, undefined behaviour!', scene_object, tree.collision_event_listeners[scene_object])
             }
             else
             {

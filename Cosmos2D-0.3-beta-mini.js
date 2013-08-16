@@ -52,7 +52,6 @@
         {
             // tady by se to mohlo zlepsit teda...
             this.root.remove_scene_object(this.scene_objects[i], this.root)
-            this.scene_objects[i].update(time)
             this.root.add_scene_object(this, this.scene_objects[i])
         }
     }
@@ -129,7 +128,7 @@
     {
         for(var i = 0; i < this.nodes.length; i++)
         {
-            if(this.nodes[i] instanceof Inner_node)
+            if(this.nodes[i] instanceof cosmos2D.ADT.Quad_tree.prototype.Inner_node)
             {
                 return false // Does not contain only leaves
             }
@@ -236,7 +235,7 @@
         {
             if(this.parent_node.depth > tree.max_depth)
             {
-                // console.log('scene full, undefined behaviour!', scene_object, tree.collision_event_listeners[scene_object])
+                console.log('scene full, undefined behaviour!', scene_object, tree.collision_event_listeners[scene_object])
             }
             else
             {
@@ -403,10 +402,10 @@
 		this.id = id
 		this.assets = assets
 
-		this.time_callback = new cosmos2D.PROPERTY.Unordered_callback()
+		// this.time_callback = new cosmos2D.PROPERTY.Unordered_callback()
 
 		// Adding new entity into Teserakt for easy access
-		cosmos2D.memory.world.insert(id, this)
+		cosmos2D.memory.universe.insert(id, this)
 
 		// Creating entity's properties
 		for(asset in assets)
@@ -516,7 +515,7 @@
 		this.pressed_event = new cosmos2D.CORE.Event_handler()
 		this.released_event = new cosmos2D.CORE.Event_handler()
 		this.active_event = new cosmos2D.CORE.Event_handler()
-		cosmos2D.time.callback.subscribe(this, "active")
+		cosmos2D.loop.callback.subscribe(this, "active")
 	}
 
 	CORE.Input_listener.prototype.clear = function(key)
@@ -557,14 +556,35 @@
 	cosmos2D.run = function()
 	{
 		// CORE objects initialization
-		this.renderer = new cosmos2D.CORE.Renderer()
-		this.memory = new cosmos2D.CORE.Memory()
-		this.time = new cosmos2D.CORE.Time()
-		this.space = new cosmos2D.PHYSICS.Space()
-		this.input = new cosmos2D.CORE.Input_listener()
+		cosmos2D.renderer = new cosmos2D.CORE.Renderer()
+		cosmos2D.memory = new cosmos2D.CORE.Memory()
+		cosmos2D.loop = new cosmos2D.CORE.Loop()
+		cosmos2D.space = new cosmos2D.PHYSICS.Space()
+		cosmos2D.input = new cosmos2D.CORE.Input_listener()
 
 		// CORE services
-		this.time.loop()
+		cosmos2D.loop.run()
+	}
+
+}(window.cosmos2D = window.cosmos2D || new Object()));
+(function(cosmos2D, undefined)
+{
+	var CORE = cosmos2D.CORE = cosmos2D.CORE || new Object()
+
+	CORE.Loop = function() 
+	{
+		this.fps = 30
+		this.ms = (new Date()).getTime()
+		this.callback = new cosmos2D.CORE.Event_handler()
+	}
+
+	CORE.Loop.prototype.run = function()
+	{
+	    this.ms = (new Date()).getTime()
+	    cosmos2D.renderer.clear()
+	    this.callback.fire(this.ms)
+	    var time_left = 1000/this.fps - ((new Date()).getTime() - this.ms)
+	    setTimeout("cosmos2D.loop.run()", time_left)
 	}
 
 }(window.cosmos2D = window.cosmos2D || new Object()));
@@ -575,7 +595,7 @@
 	CORE.Memory = function()
 	{
 		this.data  = new Object()
-		this.world = new cosmos2D.ADT.Teserakt()
+		this.universe = new cosmos2D.ADT.Teserakt()
 	}
 
 	CORE.Memory.prototype.image = function(path)
@@ -626,44 +646,46 @@
 	{
 		// RegExps used for custom value parsersing (provides custom cosmos2D asset value types)
 		var parsers = {
+			entity_binding: /^<\w+>\w+(\(|\[).*$/,
 			value_binding: /^\w+\[\w+\]$/,
 			event_subscribing: /^\w+\(\w+\)$/
 		}
 
-		// Parse and save values defined in asset
+		// Parse values defined in asset
 		for(key in asset)
 		{
-			// Simple value binding makes value of another asset accesible via get/set function
-			if(parsers.value_binding.test(asset[key]))
+			var value = asset[key]
+			var target_entity = entity
+			// If asset is bound to another entity set target entity	
+			if(parsers.entity_binding.test(value))
 			{
-				var target_asset = /^\w+/.exec(asset[key])[0]
-				var target_attribute = /\w+/.exec(/\[.*\]/.exec(asset[key])[0])[0]
+				target_entity_id = /\w+/.exec(/^<\w+>/.exec(value)[0])[0]
+				value = value.replace('<'+target_entity_id+'>', '')
+				target_entity = cosmos2D.memory.universe.find(target_entity_id)
+			}
+			// Simple value binding makes value of another asset accesible via get/set function
+			if(parsers.value_binding.test(value))
+			{
+				var target_asset = /^\w+/.exec(value)[0]
+				var target_attribute = /\w+/.exec(/\[.*\]/.exec(value)[0])[0]
 				// It has to be wrapped in ann. function to change scope, otherwise all
 				// parameters would be same
-				// ;(function(asset, target_asset, target_attribute) {
-				// 	asset['get_'+key] = function() {
-				// 		return entity[target_asset][target_attribute]
-				// 	}
-				// 	asset['set_'+key] = function(value) {
-				// 		entity[target_asset][target_attribute] = value
-				// 	}
-				// })(this, target_asset, target_attribute)
-				;(function(asset, target_asset, target_attribute) {
+				;(function(asset, target_entity, target_asset, target_attribute) {
 					asset[key] = function(value) {
 						if(value == undefined)
 						{
-							return entity[target_asset][target_attribute]
+							return target_entity[target_asset][target_attribute]
 						}
-						entity[target_asset][target_attribute] = value
+						target_entity[target_asset][target_attribute] = value
 					}
-				})(this, target_asset, target_attribute)
+				})(this, target_entity, target_asset, target_attribute)
 			}
 			// Method value binding runs method when another asset's event is fired
-			else if(parsers.event_subscribing.test(asset[key]))
+			else if(parsers.event_subscribing.test(value))
 			{
-				var target_asset = /^\w+/.exec(asset[key])[0]
-				var target_event = /\w+/.exec(/\(.*\)/.exec(asset[key])[0])[0]
-				entity[target_asset][target_event].subscribe(this, key)
+				var target_asset = /^\w+/.exec(value)[0]
+				var target_event = /\w+/.exec(/\(.*\)/.exec(value)[0])[0]
+				target_entity[target_asset][target_event].subscribe(this, key)
 			}
 			// Add javascript primitives
 			else
@@ -672,7 +694,7 @@
 			}
 		}
 
-		// Parse values and they defaults defined in initialization or test type constrain
+		// Parse values and their defaults defined in initialization or test type constrain
 		for(key in initialization)
 		{
 			// Add new values and initialize them to default
@@ -704,18 +726,6 @@
 					}
 				}
 			}
-		}
-		if(asset.callback)
-		{
-			if(!entity[asset.callback])
-			{
-				entity[asset.callback] = new cosmos2D.PROPERTY[asset.callback]()
-			}
-			entity[asset.callback].insert(this, 'apply', this.order)
-		}
-		else
-		{
-			console.log('Warning: IN "cosmos2D.parse_asset" WITH [entity '+entity.id+'] [asset '+asset.id+']: entity has no callback.')
 		}
 
 		console.log(this)
@@ -766,27 +776,6 @@
 	    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
 
 	    this.context.restore()
-	}
-
-}(window.cosmos2D = window.cosmos2D || new Object()));
-(function(cosmos2D, undefined)
-{
-	var CORE = cosmos2D.CORE = cosmos2D.CORE || new Object()
-
-	CORE.Time = function() 
-	{
-		this.fps = 30
-		this.ms = (new Date()).getTime()
-		this.callback = new cosmos2D.CORE.Event_handler()
-	}
-
-	CORE.Time.prototype.loop = function()
-	{
-	    this.ms = (new Date()).getTime()
-	    cosmos2D.renderer.clear()
-	    this.callback.fire()
-	    var time_left = 1000/this.fps - ((new Date()).getTime() - this.ms)
-	    setTimeout("cosmos2D.time.loop()", time_left)
 	}
 
 }(window.cosmos2D = window.cosmos2D || new Object()));
@@ -977,7 +966,6 @@
 	{
 		this.owner = owner
 		this.bounding_box = bounding_box
-		console.log(this.owner.x(), this.owner.y())
 	}
 
 	PHYSICS.Bounding_box.prototype.owner_x = function()
@@ -1069,7 +1057,6 @@
 	{
 		cosmos2D.renderer.context.save()
 		cosmos2D.renderer.context.beginPath()
-		console.log(this.owner_x(), this.owner_y())
 		cosmos2D.renderer.context.moveTo(this.bl_p().x, this.bl_p().y)
 		cosmos2D.renderer.context.lineTo(this.tl_p().x, this.tl_p().y)
 		cosmos2D.renderer.context.lineTo(this.tr_p().x, this.tr_p().y)
@@ -1089,8 +1076,8 @@
 	PHYSICS.Space = function()
 	{
 		this.canvas = cosmos2D.renderer.canvas
-		console.log(this.canvas.height, this.canvas.width)
-	    this.scene = new cosmos2D.ADT.Quad_tree(this.canvas.width, this.canvas.height, 1, 1)
+	    this.scene = new cosmos2D.ADT.Quad_tree(this.canvas.width, this.canvas.height, 2, 10)
+		cosmos2D.loop.callback.subscribe(this, 'update_scene')
 	}
 
 	PHYSICS.Space.prototype.add = function(scene_object)
@@ -1154,7 +1141,7 @@
 		this.parse_asset(entity, asset, {
 			animation: '',
 			frames: 0,
-			fps: cosmos2D.time.fps,
+			fps: cosmos2D.loop.fps,
 			target: 'Model[model]',
 			iterator: 0,
 			frame_counter: 0,
@@ -1166,18 +1153,13 @@
 		}
 	}
 
-	PROPERTY.Animator.prototype.apply = function()
-	{
-		
-	}
-
 	PROPERTY.Animator.prototype.play = function()
 	{
 		if(this.original == undefined)
 		{
 			this.original = this.target()
 		}
-		this.frameskip = cosmos2D.time.fps / this.fps
+		this.frameskip = cosmos2D.loop.fps / this.fps
 		if(this.frame_counter >= this.frameskip)
 		{
 			this.frame_counter = 0
@@ -1200,10 +1182,6 @@
 	PROPERTY.Audio = function(entity, asset)
 	{
 		this.parse_asset(entity, asset, {audio: ''})
-	}
-
-	PROPERTY.Audio.prototype.apply = function()
-	{
 	}
 
 	PROPERTY.Audio.prototype.play = function()
@@ -1266,10 +1244,6 @@
 		this.stop_shooting_event = new cosmos2D.CORE.Event_handler()
 	}
 
-	PROPERTY.Controls.prototype.apply = function()
-	{
-	}
-
 	PROPERTY.Controls.prototype.active = function(keyName)
 	{
 		switch(keyName)
@@ -1309,13 +1283,13 @@
 
 	PROPERTY.Fps_counter = function(entity, property)
 	{
-		this.parse_asset(entity, property, {fps: 0, last_frame_ms: cosmos2D.time.ms})
+		this.parse_asset(entity, property, {fps: 0, last_frame_ms: cosmos2D.loop.ms})
 	}
 
 	PROPERTY.Fps_counter.prototype.apply = function()
 	{
-		this.fps = Math.round(1000 / (cosmos2D.time.ms - this.last_frame_ms))
-		this.last_frame_ms = cosmos2D.time.ms
+		this.fps = Math.round(1000 / (cosmos2D.loop.ms - this.last_frame_ms))
+		this.last_frame_ms = cosmos2D.loop.ms
 	}
 
 }(window.cosmos2D = window.cosmos2D || new Object()));
@@ -1391,21 +1365,12 @@
 
 	PROPERTY.Physics.prototype.apply = function()
 	{
-		if(this.draw)
-		{
-			cosmos2D.space.render_structure()
-			this.bounding_box.draw()
-		}
+		cosmos2D.space.render_structure()
+		this.bounding_box.draw()
 	}
 
-	PROPERTY.Physics.prototype.draw_scene = function()
+	PROPERTY.Physics.prototype.on_collision = function(scene_object)
 	{
-		this.draw = !this.draw
-	}
-
-	PROPERTY.Physics.prototype.on_collision = function()
-	{
-		console.log('collision!')
 	}
 
 }(window.cosmos2D = window.cosmos2D || new Object()));
@@ -1417,7 +1382,7 @@
 	{
 		this.array = new Array(10)
 		is_unlocked ? this.is_unlocked = true : this.is_unlocked = false
-		cosmos2D.time.callback.subscribe(this, 'apply')
+		cosmos2D.loop.callback.subscribe(this, 'apply')
 	}
 
 	PROPERTY.Pipeline_callback.prototype.insert = function(object, method, order)
@@ -1516,11 +1481,28 @@
 {
 	var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
 
+	PROPERTY.Time = function(entity, asset)
+	{
+		this.parse_asset(entity, asset, {})
+		cosmos2D.loop.callback.subscribe(this, 'tick')
+		this.tick_event = new cosmos2D.CORE.Event_handler()
+	}
+
+	PROPERTY.Time.prototype.tick = function()
+	{
+		this.tick_event.fire()
+	}
+
+}(window.cosmos2D = window.cosmos2D || new Object()));
+(function(cosmos2D, undefined)
+{
+	var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
+
 	PROPERTY.Unordered_callback = function(is_unlocked)
 	{
 		this.array = new Array()
 		is_unlocked ? this.is_unlocked = true : this.is_unlocked = false
-		cosmos2D.time.callback.subscribe(this, 'apply')
+		cosmos2D.loop.callback.subscribe(this, 'apply')
 	}
 
 	PROPERTY.Unordered_callback.prototype.insert = function(object, method)

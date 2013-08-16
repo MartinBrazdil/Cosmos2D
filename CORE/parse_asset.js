@@ -5,44 +5,46 @@
 	{
 		// RegExps used for custom value parsersing (provides custom cosmos2D asset value types)
 		var parsers = {
+			entity_binding: /^<\w+>\w+(\(|\[).*$/,
 			value_binding: /^\w+\[\w+\]$/,
 			event_subscribing: /^\w+\(\w+\)$/
 		}
 
-		// Parse and save values defined in asset
+		// Parse values defined in asset
 		for(key in asset)
 		{
-			// Simple value binding makes value of another asset accesible via get/set function
-			if(parsers.value_binding.test(asset[key]))
+			var value = asset[key]
+			var target_entity = entity
+			// If asset is bound to another entity set target entity	
+			if(parsers.entity_binding.test(value))
 			{
-				var target_asset = /^\w+/.exec(asset[key])[0]
-				var target_attribute = /\w+/.exec(/\[.*\]/.exec(asset[key])[0])[0]
+				target_entity_id = /\w+/.exec(/^<\w+>/.exec(value)[0])[0]
+				value = value.replace('<'+target_entity_id+'>', '')
+				target_entity = cosmos2D.memory.universe.find(target_entity_id)
+			}
+			// Simple value binding makes value of another asset accesible via get/set function
+			if(parsers.value_binding.test(value))
+			{
+				var target_asset = /^\w+/.exec(value)[0]
+				var target_attribute = /\w+/.exec(/\[.*\]/.exec(value)[0])[0]
 				// It has to be wrapped in ann. function to change scope, otherwise all
 				// parameters would be same
-				// ;(function(asset, target_asset, target_attribute) {
-				// 	asset['get_'+key] = function() {
-				// 		return entity[target_asset][target_attribute]
-				// 	}
-				// 	asset['set_'+key] = function(value) {
-				// 		entity[target_asset][target_attribute] = value
-				// 	}
-				// })(this, target_asset, target_attribute)
-				;(function(asset, target_asset, target_attribute) {
+				;(function(asset, target_entity, target_asset, target_attribute) {
 					asset[key] = function(value) {
 						if(value == undefined)
 						{
-							return entity[target_asset][target_attribute]
+							return target_entity[target_asset][target_attribute]
 						}
-						entity[target_asset][target_attribute] = value
+						target_entity[target_asset][target_attribute] = value
 					}
-				})(this, target_asset, target_attribute)
+				})(this, target_entity, target_asset, target_attribute)
 			}
 			// Method value binding runs method when another asset's event is fired
-			else if(parsers.event_subscribing.test(asset[key]))
+			else if(parsers.event_subscribing.test(value))
 			{
-				var target_asset = /^\w+/.exec(asset[key])[0]
-				var target_event = /\w+/.exec(/\(.*\)/.exec(asset[key])[0])[0]
-				entity[target_asset][target_event].subscribe(this, key)
+				var target_asset = /^\w+/.exec(value)[0]
+				var target_event = /\w+/.exec(/\(.*\)/.exec(value)[0])[0]
+				target_entity[target_asset][target_event].subscribe(this, key)
 			}
 			// Add javascript primitives
 			else
@@ -51,7 +53,7 @@
 			}
 		}
 
-		// Parse values and they defaults defined in initialization or test type constrain
+		// Parse values and their defaults defined in initialization or test type constrain
 		for(key in initialization)
 		{
 			// Add new values and initialize them to default
@@ -83,18 +85,6 @@
 					}
 				}
 			}
-		}
-		if(asset.callback)
-		{
-			if(!entity[asset.callback])
-			{
-				entity[asset.callback] = new cosmos2D.PROPERTY[asset.callback]()
-			}
-			entity[asset.callback].insert(this, 'apply', this.order)
-		}
-		else
-		{
-			console.log('Warning: IN "cosmos2D.parse_asset" WITH [entity '+entity.id+'] [asset '+asset.id+']: entity has no callback.')
 		}
 
 		console.log(this)

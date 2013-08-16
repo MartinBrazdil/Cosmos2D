@@ -7,10 +7,6 @@
 		this.parse_asset(entity, asset, {audio: ''})
 	}
 
-	PROPERTY.Audio.prototype.apply = function()
-	{
-	}
-
 	PROPERTY.Audio.prototype.play = function()
 	{
 		cosmos2D.memory.audio(this.audio).play()
