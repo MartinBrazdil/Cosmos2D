@@ -1,53 +1,44 @@
 (function(cosmos2D, undefined)
 {
-    var PHYSICS = cosmos2D.PHYSICS = cosmos2D.PHYSICS || new Object()
+	var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
 
-	PHYSICS.Bounding_box = function(owner, bounding_box)
+	PROPERTY.Bounding_box = function(entity, asset)
 	{
-		this.owner = owner
-		this.bounding_box = bounding_box
+		this.parse_asset(entity, asset, {
+			x: undefined,
+			y: undefined,
+			pivot_x: 0,
+			pivot_y: 0
+		})
 	}
 
-	PHYSICS.Bounding_box.prototype.owner_x = function()
+	PROPERTY.Bounding_box.prototype.collision_system = function()//entity, collision_system)
 	{
-		if(typeof this.owner.x == "function")
-		{
-			return this.owner.x()
-		}
-		return this.owner.x
+		// this.collision_system.add(this)	
 	}
 
-	PHYSICS.Bounding_box.prototype.owner_y = function()
+	PROPERTY.Bounding_box.prototype.bl_p = function()
 	{
-		if(typeof this.owner.y == "function")
-		{
-			return this.owner.y()
-		}
-		return this.owner.y
+		return new cosmos2D.MATH.Vector2D(this.x() - this.pivot_x() / 2, this.y() + this.pivot_y() / 2)
 	}
 
-	PHYSICS.Bounding_box.prototype.bl_p = function()
+	PROPERTY.Bounding_box.prototype.tl_p = function()
 	{
-		return new cosmos2D.MATH.Vector2D(this.owner_x() - this.bounding_box.x / 2, this.owner_y() + this.bounding_box.y / 2)
+		return new cosmos2D.MATH.Vector2D(this.x() - this.pivot_x() / 2, this.y() - this.pivot_y() / 2)
 	}
 
-	PHYSICS.Bounding_box.prototype.tl_p = function()
+	PROPERTY.Bounding_box.prototype.tr_p = function()
 	{
-		return new cosmos2D.MATH.Vector2D(this.owner_x() - this.bounding_box.x / 2, this.owner_y() - this.bounding_box.y / 2)
+		return new cosmos2D.MATH.Vector2D(this.x() + this.pivot_x() / 2, this.y() - this.pivot_y() / 2)
 	}
 
-	PHYSICS.Bounding_box.prototype.tr_p = function()
+	PROPERTY.Bounding_box.prototype.br_p = function()
 	{
-		return new cosmos2D.MATH.Vector2D(this.owner_x() + this.bounding_box.x / 2, this.owner_y() - this.bounding_box.y / 2)
-	}
-
-	PHYSICS.Bounding_box.prototype.br_p = function()
-	{
-		return new cosmos2D.MATH.Vector2D(this.owner_x() + this.bounding_box.x / 2, this.owner_y() + this.bounding_box.y / 2)
+		return new cosmos2D.MATH.Vector2D(this.x() + this.pivot_x() / 2, this.y() + this.pivot_y() / 2)
 	}
 
 	// Collision detection between two boxes
-	PHYSICS.Bounding_box.prototype.bounding_box_collision = function(bounding_box)
+	PROPERTY.Bounding_box.prototype.bounding_box_collision = function(bounding_box)
 	{
 	    return !(bounding_box.bl_p().x > this.tr_p().x
 			|| bounding_box.tr_p().x < this.bl_p().x
@@ -56,7 +47,7 @@
 	}
 
 	// Collision detection between bounding box and rectangle
-	PHYSICS.Bounding_box.prototype.quad_tree_collision = function(bot_left_x, bot_left_y, top_right_x, top_right_y)
+	PROPERTY.Bounding_box.prototype.quad_tree_collision = function(bot_left_x, bot_left_y, top_right_x, top_right_y)
 	{
 	    return !(bot_left_x > this.tr_p().x
 			|| top_right_x < this.bl_p().x
@@ -65,7 +56,7 @@
 	}
 
 	// Intersection with line defined by point and vector - ray
-	PHYSICS.Bounding_box.prototype.line_intersection = function(point, vector)
+	PROPERTY.Bounding_box.prototype.line_intersection = function(point, vector)
 	{
 		return this.single_line_intersection(point, vector, this.bl_p(), new cosmos2D.MATH.Vector2D(this.tl_p().x - this.bl_p().x, this.tl_p().y - this.bl_p().y)) ||
 		this.single_line_intersection(point, vector, this.tl_p(), new cosmos2D.MATH.Vector2D(this.tr_p().x - this.tl_p().x, this.tr_p().y - this.tl_p().y)) ||
@@ -75,7 +66,7 @@
 
 	// line 1: from point p to p+r
 	// line 2: from point q to q+s
-	PHYSICS.Bounding_box.prototype.single_line_intersection = function(p, r, q, s)
+	PROPERTY.Bounding_box.prototype.single_line_intersection = function(p, r, q, s)
 	{
 		// p + tr = q + us
 		// t = (q - p) x s / (r x s)
@@ -93,8 +84,9 @@
 		return t >= 0 && t <= 1 && u >= 0 && u <= 1
 	}
 
-	PHYSICS.Bounding_box.prototype.draw = function()
+	PROPERTY.Bounding_box.prototype.render = function()
 	{
+		console.log('rendering box')
 		cosmos2D.renderer.context.save()
 		cosmos2D.renderer.context.beginPath()
 		cosmos2D.renderer.context.moveTo(this.bl_p().x, this.bl_p().y)

@@ -1,41 +1,42 @@
 (function(cosmos2D, undefined)
 {
-    var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
+	var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
 
-	PROPERTY.Space = function(entity, asset)
+	PROPERTY.Collisions = function(entity, asset)
 	{
 		this.parse_asset(entity, asset, {})
 		this.canvas = cosmos2D.renderer.canvas
-	    this.quad_tree = new cosmos2D.ADT.Quad_tree(this.canvas.width, this.canvas.height, 2, 10)
+	    this.quad_tree = new cosmos2D.ADT.Quad_tree(cosmos2D.renderer.canvas.width, cosmos2D.renderer.canvas.height, 2, 10)
 		cosmos2D.loop.callback.subscribe(this, 'update')
+		this.collect_event = new cosmos2D.CORE.Event_handler()
 	}
 
-	PROPERTY.Space.prototype.add = function(entity)
+	PROPERTY.Collisions.prototype.add = function(entity)
 	{
 	    this.quad_tree.add(entity)
 	}
 
-	PROPERTY.Space.prototype.remove = function(entity)
+	PROPERTY.Collisions.prototype.remove = function(entity)
 	{
 	    this.quad_tree.remove(entity)
 	}
 
-	PROPERTY.Space.prototype.render = function()
+	PROPERTY.Collisions.prototype.render = function()
 	{
 	    this.quad_tree.render()
 	}
 
-	PROPERTY.Space.prototype.update = function(time)
+	PROPERTY.Collisions.prototype.update = function(time)
 	{
 	    this.quad_tree.update(time)
 	}
 
-	PROPERTY.Space.prototype.show = function()
+	PROPERTY.Collisions.prototype.show = function()
 	{
 	    this.quad_tree.show()
 	}
 
-	PROPERTY.Space.prototype.toggle_fullscreen = function()
+	PROPERTY.Collisions.prototype.toggle_fullscreen = function()
 	{
 		if(!document.mozFullScreen && !document.webkitFullScreen)
 		{

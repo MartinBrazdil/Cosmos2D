@@ -493,10 +493,13 @@
 
 	CORE.Event_handler.prototype.fire = function(event)
 	{
+		var responses = new Array()
+		responses.length = this.listeners.length
 		for(var i = 0; i < this.listeners.length; i++)
 		{
-			this.listeners[i].object[this.listeners[i].method].call(this.listeners[i].object, event)
+			responses[i] = this.listeners[i].object[this.listeners[i].method].call(this.listeners[i].object, event)
 		}
+		return responses
 	}
 
 }(window.cosmos2D = window.cosmos2D || new Object()));
@@ -959,117 +962,6 @@
 }(window.cosmos2D = window.cosmos2D || new Object()));
 (function(cosmos2D, undefined)
 {
-    var PHYSICS = cosmos2D.PHYSICS = cosmos2D.PHYSICS || new Object()
-
-	PHYSICS.Bounding_box = function(owner, bounding_box)
-	{
-		this.owner = owner
-		this.bounding_box = bounding_box
-	}
-
-	PHYSICS.Bounding_box.prototype.owner_x = function()
-	{
-		if(typeof this.owner.x == "function")
-		{
-			return this.owner.x()
-		}
-		return this.owner.x
-	}
-
-	PHYSICS.Bounding_box.prototype.owner_y = function()
-	{
-		if(typeof this.owner.y == "function")
-		{
-			return this.owner.y()
-		}
-		return this.owner.y
-	}
-
-	PHYSICS.Bounding_box.prototype.bl_p = function()
-	{
-		return new cosmos2D.MATH.Vector2D(this.owner_x() - this.bounding_box.x / 2, this.owner_y() + this.bounding_box.y / 2)
-	}
-
-	PHYSICS.Bounding_box.prototype.tl_p = function()
-	{
-		return new cosmos2D.MATH.Vector2D(this.owner_x() - this.bounding_box.x / 2, this.owner_y() - this.bounding_box.y / 2)
-	}
-
-	PHYSICS.Bounding_box.prototype.tr_p = function()
-	{
-		return new cosmos2D.MATH.Vector2D(this.owner_x() + this.bounding_box.x / 2, this.owner_y() - this.bounding_box.y / 2)
-	}
-
-	PHYSICS.Bounding_box.prototype.br_p = function()
-	{
-		return new cosmos2D.MATH.Vector2D(this.owner_x() + this.bounding_box.x / 2, this.owner_y() + this.bounding_box.y / 2)
-	}
-
-	// Collision detection between two boxes
-	PHYSICS.Bounding_box.prototype.bounding_box_collision = function(bounding_box)
-	{
-	    return !(bounding_box.bl_p().x > this.tr_p().x
-			|| bounding_box.tr_p().x < this.bl_p().x
-			|| bounding_box.tr_p().y > this.bl_p().y
-			|| bounding_box.bl_p().y < this.tr_p().y)
-	}
-
-	// Collision detection between bounding box and rectangle
-	PHYSICS.Bounding_box.prototype.quad_tree_collision = function(bot_left_x, bot_left_y, top_right_x, top_right_y)
-	{
-	    return !(bot_left_x > this.tr_p().x
-			|| top_right_x < this.bl_p().x
-			|| top_right_y > this.bl_p().y
-			|| bot_left_y < this.tr_p().y)
-	}
-
-	// Intersection with line defined by point and vector - ray
-	PHYSICS.Bounding_box.prototype.line_intersection = function(point, vector)
-	{
-		return this.single_line_intersection(point, vector, this.bl_p(), new cosmos2D.MATH.Vector2D(this.tl_p().x - this.bl_p().x, this.tl_p().y - this.bl_p().y)) ||
-		this.single_line_intersection(point, vector, this.tl_p(), new cosmos2D.MATH.Vector2D(this.tr_p().x - this.tl_p().x, this.tr_p().y - this.tl_p().y)) ||
-		this.single_line_intersection(point, vector, this.tr_p(), new cosmos2D.MATH.Vector2D(this.br_p().x - this.tr_p().x, this.br_p().y - this.tr_p().y)) ||
-		this.single_line_intersection(point, vector, this.br_p(), new cosmos2D.MATH.Vector2D(this.bl_p().x - this.br_p().x, this.br_p().y - this.bl_p().y))
-	}
-
-	// line 1: from point p to p+r
-	// line 2: from point q to q+s
-	PHYSICS.Bounding_box.prototype.single_line_intersection = function(p, r, q, s)
-	{
-		// p + tr = q + us
-		// t = (q - p) x s / (r x s)
-		// u = (q - p) x r / (r x s)
-		var v = new cosmos2D.MATH.Vector2D(q.x - p.x, q.y - p.y); // v = (q - p)
-		var t = (v.CrossProduct(s)) / (r.CrossProduct(s))
-		var u = (v.CrossProduct(r)) / (r.CrossProduct(s))
-
-		cosmos2D.renderer.context.save()
-		point_yellow = new Image()
-		point_yellow.src = "../js/resource/point_yellow.png"
-		cosmos2D.renderer.context.drawImage(point_yellow, q.x + u * s.x - 4, q.y + u * s.y - 4)
-		cosmos2D.renderer.context.restore()
-
-		return t >= 0 && t <= 1 && u >= 0 && u <= 1
-	}
-
-	PHYSICS.Bounding_box.prototype.draw = function()
-	{
-		cosmos2D.renderer.context.save()
-		cosmos2D.renderer.context.beginPath()
-		cosmos2D.renderer.context.moveTo(this.bl_p().x, this.bl_p().y)
-		cosmos2D.renderer.context.lineTo(this.tl_p().x, this.tl_p().y)
-		cosmos2D.renderer.context.lineTo(this.tr_p().x, this.tr_p().y)
-		cosmos2D.renderer.context.lineTo(this.br_p().x, this.br_p().y)
-		cosmos2D.renderer.context.lineTo(this.bl_p().x, this.bl_p().y)
-		cosmos2D.renderer.context.lineWidth = 1
-		cosmos2D.renderer.context.strokeStyle = "red"
-		cosmos2D.renderer.context.stroke()
-		cosmos2D.renderer.context.restore()
-	}
-
-}(window.cosmos2D = window.cosmos2D || new Object()));
-(function(cosmos2D, undefined)
-{
 	var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
 
 	PROPERTY.Animator = function(entity, asset)
@@ -1135,6 +1027,109 @@
 {
 	var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
 
+	PROPERTY.Bounding_box = function(entity, asset)
+	{
+		this.parse_asset(entity, asset, {
+			x: undefined,
+			y: undefined,
+			pivot_x: 0,
+			pivot_y: 0
+		})
+	}
+
+	PROPERTY.Bounding_box.prototype.collision_system = function()//entity, collision_system)
+	{
+		// this.collision_system.add(this)	
+	}
+
+	PROPERTY.Bounding_box.prototype.bl_p = function()
+	{
+		return new cosmos2D.MATH.Vector2D(this.x() - this.pivot_x() / 2, this.y() + this.pivot_y() / 2)
+	}
+
+	PROPERTY.Bounding_box.prototype.tl_p = function()
+	{
+		return new cosmos2D.MATH.Vector2D(this.x() - this.pivot_x() / 2, this.y() - this.pivot_y() / 2)
+	}
+
+	PROPERTY.Bounding_box.prototype.tr_p = function()
+	{
+		return new cosmos2D.MATH.Vector2D(this.x() + this.pivot_x() / 2, this.y() - this.pivot_y() / 2)
+	}
+
+	PROPERTY.Bounding_box.prototype.br_p = function()
+	{
+		return new cosmos2D.MATH.Vector2D(this.x() + this.pivot_x() / 2, this.y() + this.pivot_y() / 2)
+	}
+
+	// Collision detection between two boxes
+	PROPERTY.Bounding_box.prototype.bounding_box_collision = function(bounding_box)
+	{
+	    return !(bounding_box.bl_p().x > this.tr_p().x
+			|| bounding_box.tr_p().x < this.bl_p().x
+			|| bounding_box.tr_p().y > this.bl_p().y
+			|| bounding_box.bl_p().y < this.tr_p().y)
+	}
+
+	// Collision detection between bounding box and rectangle
+	PROPERTY.Bounding_box.prototype.quad_tree_collision = function(bot_left_x, bot_left_y, top_right_x, top_right_y)
+	{
+	    return !(bot_left_x > this.tr_p().x
+			|| top_right_x < this.bl_p().x
+			|| top_right_y > this.bl_p().y
+			|| bot_left_y < this.tr_p().y)
+	}
+
+	// Intersection with line defined by point and vector - ray
+	PROPERTY.Bounding_box.prototype.line_intersection = function(point, vector)
+	{
+		return this.single_line_intersection(point, vector, this.bl_p(), new cosmos2D.MATH.Vector2D(this.tl_p().x - this.bl_p().x, this.tl_p().y - this.bl_p().y)) ||
+		this.single_line_intersection(point, vector, this.tl_p(), new cosmos2D.MATH.Vector2D(this.tr_p().x - this.tl_p().x, this.tr_p().y - this.tl_p().y)) ||
+		this.single_line_intersection(point, vector, this.tr_p(), new cosmos2D.MATH.Vector2D(this.br_p().x - this.tr_p().x, this.br_p().y - this.tr_p().y)) ||
+		this.single_line_intersection(point, vector, this.br_p(), new cosmos2D.MATH.Vector2D(this.bl_p().x - this.br_p().x, this.br_p().y - this.bl_p().y))
+	}
+
+	// line 1: from point p to p+r
+	// line 2: from point q to q+s
+	PROPERTY.Bounding_box.prototype.single_line_intersection = function(p, r, q, s)
+	{
+		// p + tr = q + us
+		// t = (q - p) x s / (r x s)
+		// u = (q - p) x r / (r x s)
+		var v = new cosmos2D.MATH.Vector2D(q.x - p.x, q.y - p.y); // v = (q - p)
+		var t = (v.CrossProduct(s)) / (r.CrossProduct(s))
+		var u = (v.CrossProduct(r)) / (r.CrossProduct(s))
+
+		cosmos2D.renderer.context.save()
+		point_yellow = new Image()
+		point_yellow.src = "../js/resource/point_yellow.png"
+		cosmos2D.renderer.context.drawImage(point_yellow, q.x + u * s.x - 4, q.y + u * s.y - 4)
+		cosmos2D.renderer.context.restore()
+
+		return t >= 0 && t <= 1 && u >= 0 && u <= 1
+	}
+
+	PROPERTY.Bounding_box.prototype.render = function()
+	{
+		console.log('rendering box')
+		cosmos2D.renderer.context.save()
+		cosmos2D.renderer.context.beginPath()
+		cosmos2D.renderer.context.moveTo(this.bl_p().x, this.bl_p().y)
+		cosmos2D.renderer.context.lineTo(this.tl_p().x, this.tl_p().y)
+		cosmos2D.renderer.context.lineTo(this.tr_p().x, this.tr_p().y)
+		cosmos2D.renderer.context.lineTo(this.br_p().x, this.br_p().y)
+		cosmos2D.renderer.context.lineTo(this.bl_p().x, this.bl_p().y)
+		cosmos2D.renderer.context.lineWidth = 1
+		cosmos2D.renderer.context.strokeStyle = "red"
+		cosmos2D.renderer.context.stroke()
+		cosmos2D.renderer.context.restore()
+	}
+
+}(window.cosmos2D = window.cosmos2D || new Object()));
+(function(cosmos2D, undefined)
+{
+	var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
+
 	PROPERTY.Buffered_average = function(entity, property)
 	{
 		this.parse_asset(entity, property, {target: 0, max_buffer_length: 100, round: true})
@@ -1156,6 +1151,71 @@
 		if(this.round)
 		{
 			this.average = Math.round(this.average)
+		}
+	}
+
+}(window.cosmos2D = window.cosmos2D || new Object()));
+(function(cosmos2D, undefined)
+{
+	var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
+
+	PROPERTY.Collisions = function(entity, asset)
+	{
+		this.parse_asset(entity, asset, {})
+		this.canvas = cosmos2D.renderer.canvas
+	    this.quad_tree = new cosmos2D.ADT.Quad_tree(cosmos2D.renderer.canvas.width, cosmos2D.renderer.canvas.height, 2, 10)
+		cosmos2D.loop.callback.subscribe(this, 'update')
+		this.collect_event = new cosmos2D.CORE.Event_handler()
+	}
+
+	PROPERTY.Collisions.prototype.add = function(entity)
+	{
+	    this.quad_tree.add(entity)
+	}
+
+	PROPERTY.Collisions.prototype.remove = function(entity)
+	{
+	    this.quad_tree.remove(entity)
+	}
+
+	PROPERTY.Collisions.prototype.render = function()
+	{
+	    this.quad_tree.render()
+	}
+
+	PROPERTY.Collisions.prototype.update = function(time)
+	{
+	    this.quad_tree.update(time)
+	}
+
+	PROPERTY.Collisions.prototype.show = function()
+	{
+	    this.quad_tree.show()
+	}
+
+	PROPERTY.Collisions.prototype.toggle_fullscreen = function()
+	{
+		if(!document.mozFullScreen && !document.webkitFullScreen)
+		{
+			if(this.canvas.mozRequestFullScreen)
+			{
+				this.canvas.mozRequestFullScreen()
+			}
+			else
+			{
+				this.canvas.webkitRequestFullScreen(Element.ALLOW_KEYBOARD_INPUT)
+			}
+		}
+		else
+		{
+			if(document.mozCancelFullScreen) 
+			{
+				document.mozCancelFullScreen()
+			} 
+			else 
+			{
+				document.webkitCancelFullScreen()
+			}
 		}
 	}
 
@@ -1233,53 +1293,72 @@
 {
 	var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
 
+	PROPERTY.Geometry = function(entity, asset)
+	{
+		this.parse_asset(entity, asset, {
+			rotation_speed: 0,
+			move_speed: 0,
+			rotation: 0,
+			x: 0,
+			y: 0,
+		})
+	}
+
+	PROPERTY.Geometry.prototype.apply = function()
+	{
+	    cosmos2D.renderer.context.translate(this.x, this.y)
+	}
+
+	PROPERTY.Geometry.prototype.go_forward = function()
+	{
+		var rotation_matrix = new cosmos2D.MATH.RotationMatrix2x2((this.rotation*2*Math.PI)/360)
+	    delta_position = rotation_matrix.rightVectorMultiplication(new cosmos2D.MATH.Vector2D(this.move_speed, 0))
+	    this.x += delta_position.x
+	    this.y += delta_position.y
+	}
+
+	PROPERTY.Geometry.prototype.go_backward = function()
+	{
+		var rotation_matrix = new cosmos2D.MATH.RotationMatrix2x2((this.rotation*2*Math.PI)/360)
+	    delta_position = rotation_matrix.rightVectorMultiplication(new cosmos2D.MATH.Vector2D(this.move_speed, 0))
+	    this.x -= delta_position.x
+	    this.y -= delta_position.y
+	}
+
+	PROPERTY.Geometry.prototype.turn_left = function()
+	{
+		this.rotation -= this.rotation_speed
+	}
+	
+	PROPERTY.Geometry.prototype.turn_right = function()
+	{
+		this.rotation += this.rotation_speed
+	}
+
+}(window.cosmos2D = window.cosmos2D || new Object()));
+(function(cosmos2D, undefined)
+{
+	var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
+
 	PROPERTY.Model = function(entity, asset)
 	{
 		this.parse_asset(entity, asset, {
-			x: 0,
-			y: 0,
+			x: undefined,
+			y: undefined,
 			model: '',
 			pivot_x: 0,
 			pivot_y: 0,
-			rotation: 0,
-			move_speed: 5,
-			rotation_speed: 0.1
+			rotation: undefined
 		})
 	}
 
 	PROPERTY.Model.prototype.apply = function()
 	{
 		cosmos2D.renderer.context.save()
-	    cosmos2D.renderer.context.translate(this.x, this.y)
-	    cosmos2D.renderer.context.rotate(this.rotation)
+	    cosmos2D.renderer.context.translate(this.x(), this.y())
+	    cosmos2D.renderer.context.rotate((this.rotation()*2*Math.PI)/360)
 	    cosmos2D.renderer.context.drawImage(cosmos2D.memory.image(this.model), -this.pivot_x, -this.pivot_y)
 		cosmos2D.renderer.context.restore()
-	}
-
-	PROPERTY.Model.prototype.go_forward = function()
-	{
-		var rotation_matrix = new cosmos2D.MATH.RotationMatrix2x2(this.rotation)
-	    delta_position = rotation_matrix.rightVectorMultiplication(new cosmos2D.MATH.Vector2D(this.move_speed, 0))
-	    this.x += delta_position.x
-	    this.y += delta_position.y
-	}
-
-	PROPERTY.Model.prototype.go_backward = function()
-	{
-		var rotation_matrix = new cosmos2D.MATH.RotationMatrix2x2(this.rotation)
-	    delta_position = rotation_matrix.rightVectorMultiplication(new cosmos2D.MATH.Vector2D(this.move_speed, 0))
-	    this.x -= delta_position.x
-	    this.y -= delta_position.y
-	}
-
-	PROPERTY.Model.prototype.turn_left = function()
-	{
-		this.rotation -= 0.1
-	}
-	
-	PROPERTY.Model.prototype.turn_right = function()
-	{
-		this.rotation += 0.1
 	}
 	
 }(window.cosmos2D = window.cosmos2D || new Object()));
@@ -1350,85 +1429,6 @@
 		this.is_unlocked ? this.is_unlocked = false : this.is_unlocked = true
 	}
 	
-}(window.cosmos2D = window.cosmos2D || new Object()));
-(function(cosmos2D, undefined)
-{
-	var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
-
-	PROPERTY.Position = function(entity, asset)
-	{
-		this.parse_asset(entity, asset, {x: 0, y: 0})
-	}
-
-	PROPERTY.Position.prototype.apply = function()
-	{
-	    cosmos2D.renderer.context.translate(this.x, this.y)
-	}
-
-}(window.cosmos2D = window.cosmos2D || new Object()));
-(function(cosmos2D, undefined)
-{
-    var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
-
-	PROPERTY.Space = function(entity, asset)
-	{
-		this.parse_asset(entity, asset, {})
-		this.canvas = cosmos2D.renderer.canvas
-	    this.quad_tree = new cosmos2D.ADT.Quad_tree(this.canvas.width, this.canvas.height, 2, 10)
-		cosmos2D.loop.callback.subscribe(this, 'update')
-	}
-
-	PROPERTY.Space.prototype.add = function(entity)
-	{
-	    this.quad_tree.add(entity)
-	}
-
-	PROPERTY.Space.prototype.remove = function(entity)
-	{
-	    this.quad_tree.remove(entity)
-	}
-
-	PROPERTY.Space.prototype.render = function()
-	{
-	    this.quad_tree.render()
-	}
-
-	PROPERTY.Space.prototype.update = function(time)
-	{
-	    this.quad_tree.update(time)
-	}
-
-	PROPERTY.Space.prototype.show = function()
-	{
-	    this.quad_tree.show()
-	}
-
-	PROPERTY.Space.prototype.toggle_fullscreen = function()
-	{
-		if(!document.mozFullScreen && !document.webkitFullScreen)
-		{
-			if(this.canvas.mozRequestFullScreen)
-			{
-				this.canvas.mozRequestFullScreen()
-			}
-			else
-			{
-				this.canvas.webkitRequestFullScreen(Element.ALLOW_KEYBOARD_INPUT)
-			}
-		}
-		else
-		{
-			if(document.mozCancelFullScreen) 
-			{
-				document.mozCancelFullScreen()
-			} 
-			else 
-			{
-				document.webkitCancelFullScreen()
-			}
-		}
-	}
-
 }(window.cosmos2D = window.cosmos2D || new Object()));
 (function(cosmos2D, undefined)
 {

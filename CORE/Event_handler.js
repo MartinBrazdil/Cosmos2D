@@ -37,10 +37,13 @@
 
 	CORE.Event_handler.prototype.fire = function(event)
 	{
+		var responses = new Array()
+		responses.length = this.listeners.length
 		for(var i = 0; i < this.listeners.length; i++)
 		{
-			this.listeners[i].object[this.listeners[i].method].call(this.listeners[i].object, event)
+			responses[i] = this.listeners[i].object[this.listeners[i].method].call(this.listeners[i].object, event)
 		}
+		return responses
 	}
 
 }(window.cosmos2D = window.cosmos2D || new Object()));
