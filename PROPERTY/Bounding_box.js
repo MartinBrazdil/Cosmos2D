@@ -12,9 +12,9 @@
 		})
 	}
 
-	PROPERTY.Bounding_box.prototype.collision_system = function()//entity, collision_system)
+	PROPERTY.Bounding_box.prototype.collision_system = function(collision_system)
 	{
-		// this.collision_system.add(this)	
+		return this
 	}
 
 	PROPERTY.Bounding_box.prototype.bl_p = function()

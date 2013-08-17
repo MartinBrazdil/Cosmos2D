@@ -4,16 +4,18 @@
 
     PROPERTY.Quad_tree = function(entity, asset)//width, height, capacity, max_depth)
     {
-        this.parse_asset(entity, asset, {})
+        this.parse_asset(entity, asset, {
+            width: cosmos2D.renderer.canvas.width,
+            height: cosmos2D.renderer.canvas.height,
+            capacity: 2,
+            max_depth: 2,
+        })
 
         this.entities = new Array()
-        this.width = width
-        this.height = height
-        this.capacity = capacity
-        this.max_depth = max_depth
         this.collision_event_listeners = new Array()
-        this.root = new cosmos2D.PROPERTY.Quad_tree.prototype.Inner_node(null, width / 2, height / 2, width / 2, height / 2)
+        this.root = new cosmos2D.PROPERTY.Quad_tree.prototype.Inner_node(null, this._width / 2, this._height / 2, this._width / 2, this._height / 2)
         this.root.depth = 0
+        this.collect_event = new cosmos2D.CORE.Event_handler
     }
 
     // Adds GO to the tree, optional parameter on_collision_method is GO's method name, which would be registered for on_collision_event
@@ -34,34 +36,26 @@
         this.root.remove(entity, this.root)
     }
 
-    // Renders quad tree structure visible
-    PROPERTY.Quad_tree.prototype.render = function()
-    {
-        for(var i = 0; i < this.entities.length; i++)
-        {
-            this.entities[i].render()
-        }
-    }
-
     PROPERTY.Quad_tree.prototype.quadrant_changed = function(entity)
     {
         return true
     }
 
+    // tady by se to mohlo zlepsit nejak...
     PROPERTY.Quad_tree.prototype.update = function(time)
     {
-        for(var i = 0; i < this.entities.length; i++)
+        entities = this.collect_event.fire()
+        for(var i = 0; i < entities.length; i++)
         {
-            // tady by se to mohlo zlepsit teda...
-            this.root.remove(this.entities[i], this.root)
-            this.root.add(this, this.entities[i])
+            this.root.remove(entities[i], this.root)
+            this.root.add(this, entities[i])
         }
     }
 
     // Renders quad tree structure visible
-    PROPERTY.Quad_tree.prototype.show = function()
+    PROPERTY.Quad_tree.prototype.render = function()
     {
-        this.root.show(1)
+        this.root.render(1)
     }
 
     PROPERTY.Quad_tree.prototype.Inner_node = function(parent_node, midpoint_x, midpoint_y, half_width, half_height)
@@ -91,7 +85,7 @@
     PROPERTY.Quad_tree.prototype.Inner_node.prototype.intersected_quadrants = function(entity)
     {
         var quadrants = new Array()
-        if(entity.bounding_box.quad_tree_collision(
+        if(entity.quad_tree_collision(
             this.midpoint_x,
             this.midpoint_y,
             this.midpoint_x + this.half_width,
@@ -99,7 +93,7 @@
         {
             quadrants.push(0)
         }
-        if(entity.bounding_box.quad_tree_collision(
+        if(entity.quad_tree_collision(
             this.midpoint_x - this.half_width,
             this.midpoint_y,
             this.midpoint_x,
@@ -107,7 +101,7 @@
         {
             quadrants.push(1)
         }
-        if(entity.bounding_box.quad_tree_collision(
+        if(entity.quad_tree_collision(
             this.midpoint_x - this.half_width,
             this.midpoint_y + this.half_height,
             this.midpoint_x,
@@ -115,7 +109,7 @@
         {
             quadrants.push(2)
         }
-        if(entity.bounding_box.quad_tree_collision(
+        if(entity.quad_tree_collision(
             this.midpoint_x,
             this.midpoint_y + this.half_height,
             this.midpoint_x + this.half_width,
@@ -170,7 +164,7 @@
         this.nodes[quadrant].add(tree, entity)
     }
 
-    PROPERTY.Quad_tree.prototype.Inner_node.prototype.show = function(depth)
+    PROPERTY.Quad_tree.prototype.Inner_node.prototype.render = function(depth)
     {
         cosmos2D.renderer.context.save()
         cosmos2D.renderer.context.beginPath()
@@ -191,7 +185,7 @@
 
         for(var i = 0; i < this.nodes.length; i++)
         {
-            this.nodes[i].show(depth+1)
+            this.nodes[i].render(depth+1)
         }
     }
 
@@ -228,14 +222,14 @@
     {
         for(var i = 0; i < this.entities.length; i++)
         {
-            if(this.entities[i].bounding_box.bounding_box_collision(entity.bounding_box))
+            if(this.entities[i].bounding_box_collision(entity))
             {
                 entity.on_collision(this.entities[i])
             }
         }
-        if(this.is_full(tree.capacity))
+        if(this.is_full(tree.capacity()))
         {
-            if(this.parent_node.depth > tree.max_depth)
+            if(this.parent_node.depth > tree.max_depth())
             {
                 console.log('scene full, undefined behaviour!', entity, tree.collision_event_listeners[entity])
             }
@@ -250,7 +244,7 @@
         }
     }
 
-    PROPERTY.Quad_tree.prototype.Leaf_node.prototype.show = function()
+    PROPERTY.Quad_tree.prototype.Leaf_node.prototype.render = function()
     {
     }
 
