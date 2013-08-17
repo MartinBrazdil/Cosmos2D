@@ -10,11 +10,17 @@
 			pivot_x: 0,
 			pivot_y: 0
 		})
+		this.collision_event = new cosmos2D.CORE.Event_handler()
 	}
 
-	PROPERTY.Bounding_box.prototype.collision_system = function()//entity, collision_system)
+	PROPERTY.Bounding_box.prototype.collision_system = function(collision_system)
 	{
-		// this.collision_system.add(this)	
+		return this
+	}
+
+	PROPERTY.Bounding_box.prototype.on_collision = function(entity)
+	{
+		this.collision_event.fire()
 	}
 
 	PROPERTY.Bounding_box.prototype.bl_p = function()
