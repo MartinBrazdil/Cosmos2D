@@ -4,17 +4,19 @@
 
 	PROPERTY.Audio = function(entity, asset)
 	{
-		this.parse_asset(entity, asset, {audio: ''})
+		this.parse_asset(entity, asset, {
+			audio: undefined
+		})
 	}
 
 	PROPERTY.Audio.prototype.play = function()
 	{
-		cosmos2D.memory.audio(this.audio).play()
+		cosmos2D.memory.audio(this.audio()).play()
 	}
 
 	PROPERTY.Audio.prototype.stop = function()
 	{
-		cosmos2D.memory.audio(this.audio).pause()
+		cosmos2D.memory.audio(this.audio()).pause()
 	}
 
 }(window.cosmos2D = window.cosmos2D || new Object()));

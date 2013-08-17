@@ -22,19 +22,19 @@
 	{
 		switch(keyName)
 		{
-			case this.forward:
+			case this.forward():
 				this.forward_event.fire()
 				break
-			case this.backward:
+			case this.backward():
 				this.backward_event.fire()
 				break
-			case this.turn_left:
+			case this.turn_left():
 				this.turn_left_event.fire()
 				break
-			case this.turn_right:
+			case this.turn_right():
 				this.turn_right_event.fire()
 				break
-			case this.shoot:
+			case this.shoot():
 				this.shoot_event.fire()
 				break
 		}
@@ -44,7 +44,7 @@
 	{
 		switch(keyName)
 		{
-			case this.shoot:
+			case this.shoot():
 				this.stop_shooting_event.fire()
 				break
 		}

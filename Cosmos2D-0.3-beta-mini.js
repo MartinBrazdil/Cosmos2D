@@ -652,7 +652,7 @@
 			value_binding: /^\w+\[\w+\]$/,
 			event_subscribing: /^\w+\(\w+\)$/
 		}
-
+		
 		// Parse values defined in asset
 		for(key in asset)
 		{
@@ -668,31 +668,40 @@
 			// Simple value binding makes value of another asset accesible via get/set function
 			if(parsers.value_binding.test(value))
 			{
-				var target_asset = /^\w+/.exec(value)[0]
+				var target_property = /^\w+/.exec(value)[0]
 				var target_attribute = /\w+/.exec(/\[.*\]/.exec(value)[0])[0]
 				// It has to be wrapped in ann. function to change scope, otherwise all
 				// parameters would be same
-				;(function(asset, target_entity, target_asset, target_attribute) {
+				;(function(asset, target_entity, target_property, target_attribute) {
 					asset[key] = function(value) {
 						if(value == undefined)
 						{
-							return target_entity[target_asset][target_attribute]
+							return target_entity[target_property][target_attribute]()
 						}
-						target_entity[target_asset][target_attribute] = value
+						target_entity[target_property][target_attribute](value)
 					}
-				})(this, target_entity, target_asset, target_attribute)
+				})(this, target_entity, target_property, target_attribute)
 			}
 			// Method value binding runs method when another asset's event is fired
 			else if(parsers.event_subscribing.test(value))
 			{
-				var target_asset = /^\w+/.exec(value)[0]
+				var target_property = /^\w+/.exec(value)[0]
 				var target_event = /\w+/.exec(/\(.*\)/.exec(value)[0])[0]
-				target_entity[target_asset][target_event].subscribe(this, key)
+				target_entity[target_property][target_event].subscribe(this, key)
 			}
 			// Add javascript primitives
 			else
 			{
-				this[key] = asset[key]
+				this['_'+key] = asset[key]
+				;(function(property, entity, property_id, key) {
+					property[key.substring(1)] = function(value) {
+						if(value == undefined)
+						{
+							return entity[property_id][key]
+						}
+						entity[property_id][key] = value
+					}
+				})(this, entity, asset.id, '_'+key)
 			}
 		}
 
@@ -702,7 +711,16 @@
 			// Add new values and initialize them to default
 			if(!this[key])
 			{
-				this[key] = initialization[key]
+				this['_'+key] = initialization[key]
+				;(function(property, entity, property_id, key) {
+					property[key.substring(1)] = function(value) {
+						if(value == undefined)
+						{
+							return entity[property_id][key]
+						}
+						entity[property_id][key] = value
+					}
+				})(this, entity, asset.id, '_'+key)
 			}
 			else
 			// If key is alredy defined instead of adding default value test present value against it's type
@@ -722,10 +740,10 @@
 						}
 					}
 					// If it is not a custom type then throw constrain violation error
-					if(is_not_special_type)
-					{
-						throw(Error('IN cosmos2D.parse_asset WITH [entity '+entity.id+'] [asset '+asset.id+']: value type constrain violation.'))
-					}
+					// if(is_not_special_type)
+					// {
+					// 	throw(Error('IN cosmos2D.parse_asset WITH [entity '+entity.id+'] [asset '+asset.id+']: value type constrain violation.'))
+					// }
 				}
 			}
 		}
@@ -973,33 +991,30 @@
 			target: 'Model[model]',
 			iterator: 0,
 			frame_counter: 0,
+			frameskip: 1,
 			original: undefined
 		})
-		if(this.original == undefined)
+		if(this._original == undefined)
 		{
-			this.original = this.target()
+			this._original = this.target()
 		}
 	}
 
 	PROPERTY.Animator.prototype.play = function()
 	{
-		if(this.original == undefined)
+		this.frameskip(cosmos2D.loop.fps / this.fps())
+		if(this.frame_counter() >= this.frameskip())
 		{
-			this.original = this.target()
+			this.frame_counter(0)
+			this.iterator((this.iterator() + 1) % this.frames())
+			this.target(this.animation().replace(/\./, '_'+this.iterator()+'.'))
 		}
-		this.frameskip = cosmos2D.loop.fps / this.fps
-		if(this.frame_counter >= this.frameskip)
-		{
-			this.frame_counter = 0
-			this.iterator = (this.iterator + 1) % this.frames
-			this.target(this.animation.replace(/\./, '_'+this.iterator+'.'))
-		}
-		this.frame_counter++
+		this.frame_counter(this.frame_counter()+1)
 	}
 
 	PROPERTY.Animator.prototype.stop = function()
 	{
-		this.target(this.original)
+		this.target(this.original())
 	}
 
 }(window.cosmos2D = window.cosmos2D || new Object()));
@@ -1009,17 +1024,19 @@
 
 	PROPERTY.Audio = function(entity, asset)
 	{
-		this.parse_asset(entity, asset, {audio: ''})
+		this.parse_asset(entity, asset, {
+			audio: undefined
+		})
 	}
 
 	PROPERTY.Audio.prototype.play = function()
 	{
-		cosmos2D.memory.audio(this.audio).play()
+		cosmos2D.memory.audio(this.audio()).play()
 	}
 
 	PROPERTY.Audio.prototype.stop = function()
 	{
-		cosmos2D.memory.audio(this.audio).pause()
+		cosmos2D.memory.audio(this.audio()).pause()
 	}
 
 }(window.cosmos2D = window.cosmos2D || new Object()));
@@ -1130,27 +1147,30 @@
 {
 	var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
 
-	PROPERTY.Buffered_average = function(entity, property)
+	PROPERTY.Buffered_average = function(entity, asset)
 	{
-		this.parse_asset(entity, property, {target: 0, max_buffer_length: 100, round: true})
-
+		this.parse_asset(entity, asset, {
+			target: 0,
+			max_buffer_length: 100,
+			round: true,
+			total: 0,
+			average: 0
+		})
 		this.buffer = new Array()
-		this.total = 0
-		this.average = 0
 	}
 
 	PROPERTY.Buffered_average.prototype.apply = function()
 	{
 		var new_value = this.target()
-		this.total += new_value
-		if(this.buffer.push(new_value) == this.max_buffer_length)
+		this.total(this.total()+new_value)
+		if(this.buffer.push(new_value) == this.max_buffer_length())
 		{
-			this.total -= this.buffer.shift()
+			this.total(this.total()-this.buffer.shift())
 		}
-		this.average = this.total / this.buffer.length
-		if(this.round)
+		this.average(this.total()/this.buffer.length)
+		if(this.round())
 		{
-			this.average = Math.round(this.average)
+			this.average(Math.round(this.average()))
 		}
 	}
 
@@ -1244,19 +1264,19 @@
 	{
 		switch(keyName)
 		{
-			case this.forward:
+			case this.forward():
 				this.forward_event.fire()
 				break
-			case this.backward:
+			case this.backward():
 				this.backward_event.fire()
 				break
-			case this.turn_left:
+			case this.turn_left():
 				this.turn_left_event.fire()
 				break
-			case this.turn_right:
+			case this.turn_right():
 				this.turn_right_event.fire()
 				break
-			case this.shoot:
+			case this.shoot():
 				this.shoot_event.fire()
 				break
 		}
@@ -1266,7 +1286,7 @@
 	{
 		switch(keyName)
 		{
-			case this.shoot:
+			case this.shoot():
 				this.stop_shooting_event.fire()
 				break
 		}
@@ -1277,15 +1297,15 @@
 {
 	var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
 
-	PROPERTY.Fps_counter = function(entity, property)
+	PROPERTY.Fps_counter = function(entity, asset)
 	{
-		this.parse_asset(entity, property, {fps: 0, last_frame_ms: cosmos2D.loop.ms})
+		this.parse_asset(entity, asset, {fps: 0, last_frame_ms: cosmos2D.loop.ms})
 	}
 
 	PROPERTY.Fps_counter.prototype.apply = function()
 	{
-		this.fps = Math.round(1000 / (cosmos2D.loop.ms - this.last_frame_ms))
-		this.last_frame_ms = cosmos2D.loop.ms
+		this.fps(Math.round(1000 / (cosmos2D.loop.ms - this.last_frame_ms())))
+		this.last_frame_ms(cosmos2D.loop.ms)
 	}
 
 }(window.cosmos2D = window.cosmos2D || new Object()));
@@ -1306,33 +1326,33 @@
 
 	PROPERTY.Geometry.prototype.apply = function()
 	{
-	    cosmos2D.renderer.context.translate(this.x, this.y)
+	    cosmos2D.renderer.context.translate(this.x(), this.y())
 	}
 
 	PROPERTY.Geometry.prototype.go_forward = function()
 	{
-		var rotation_matrix = new cosmos2D.MATH.RotationMatrix2x2((this.rotation*2*Math.PI)/360)
-	    delta_position = rotation_matrix.rightVectorMultiplication(new cosmos2D.MATH.Vector2D(this.move_speed, 0))
-	    this.x += delta_position.x
-	    this.y += delta_position.y
+		var rotation_matrix = new cosmos2D.MATH.RotationMatrix2x2((this.rotation()*2*Math.PI)/360)
+	    delta_position = rotation_matrix.rightVectorMultiplication(new cosmos2D.MATH.Vector2D(this.move_speed(), 0))
+	    this.x(this.x()+delta_position.x)
+	    this.y(this.y()+delta_position.y)
 	}
 
 	PROPERTY.Geometry.prototype.go_backward = function()
 	{
-		var rotation_matrix = new cosmos2D.MATH.RotationMatrix2x2((this.rotation*2*Math.PI)/360)
-	    delta_position = rotation_matrix.rightVectorMultiplication(new cosmos2D.MATH.Vector2D(this.move_speed, 0))
-	    this.x -= delta_position.x
-	    this.y -= delta_position.y
+		var rotation_matrix = new cosmos2D.MATH.RotationMatrix2x2((this.rotation()*2*Math.PI)/360)
+	    delta_position = rotation_matrix.rightVectorMultiplication(new cosmos2D.MATH.Vector2D(this.move_speed(), 0))
+	    this.x(this.x()-delta_position.x)
+	    this.y(this.y()-delta_position.y)
 	}
 
 	PROPERTY.Geometry.prototype.turn_left = function()
 	{
-		this.rotation -= this.rotation_speed
+		this.rotation(this.rotation()-this.rotation_speed())
 	}
 	
 	PROPERTY.Geometry.prototype.turn_right = function()
 	{
-		this.rotation += this.rotation_speed
+		this.rotation(this.rotation()+this.rotation_speed())
 	}
 
 }(window.cosmos2D = window.cosmos2D || new Object()));
@@ -1345,7 +1365,7 @@
 		this.parse_asset(entity, asset, {
 			x: undefined,
 			y: undefined,
-			model: '',
+			model: undefined,
 			pivot_x: 0,
 			pivot_y: 0,
 			rotation: undefined
@@ -1357,38 +1377,12 @@
 		cosmos2D.renderer.context.save()
 	    cosmos2D.renderer.context.translate(this.x(), this.y())
 	    cosmos2D.renderer.context.rotate((this.rotation()*2*Math.PI)/360)
-	    cosmos2D.renderer.context.drawImage(cosmos2D.memory.image(this.model), -this.pivot_x, -this.pivot_y)
+	    cosmos2D.renderer.context.drawImage(cosmos2D.memory.image(this.model()), -this.pivot_x(), -this.pivot_y())
 		cosmos2D.renderer.context.restore()
 	}
 	
 }(window.cosmos2D = window.cosmos2D || new Object()));
 
-(function(cosmos2D, undefined)
-{
-	var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
-
-	PROPERTY.Physics = function(entity, asset)
-	{
-		this.parse_asset(entity, asset, {
-			x: undefined,
-			y: undefined,
-			draw: true
-		})
-		this.bounding_box = new cosmos2D.PHYSICS.Bounding_box(this, new cosmos2D.MATH.Vector2D(58, 64))
-		// cosmos2D.space.add(this)
-	}
-
-	PROPERTY.Physics.prototype.apply = function()
-	{
-		// cosmos2D.space.render_structure()
-		this.bounding_box.draw()
-	}
-
-	PROPERTY.Physics.prototype.on_collision = function(scene_object)
-	{
-	}
-
-}(window.cosmos2D = window.cosmos2D || new Object()));
 (function(cosmos2D, undefined)
 {
 	var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
@@ -1435,16 +1429,29 @@
 	var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
 
 	// TEXT A CONTROLS
-	PROPERTY.Text = function(entity, property)
+	PROPERTY.Text = function(entity, asset)
 	{
-		this.parse_asset(entity, property, {text: '', color: '#000000', style: 'fill', font_style: '', font_variant: '',
-			font_weight: '', font_size: 12, font_family: 'Arial', text_align: 'start', text_baseline: 'top', max_width: false})
+		this.parse_asset(entity, asset, {
+			x: undefined,
+			y: undefined,
+			text: undefined,
+			color: '#000000',
+			style: 'fill',
+			font_style: '',
+			font_variant: '',
+			font_weight: '',
+			font_size: 12,
+			font_family: 'Arial',
+			text_align: 'start',
+			text_baseline: 'top',
+			max_width: false
+		})
 
 		// Create switch between stroke/fill both with/out max_width
 		// fill and no width = 0, fill and width = 1, stroke and no width = 2, stroke and width = 3
 		this.switch = 0
-		this.style == 'fill' ? this.switch = 0 : this.switch = 2
-		if(this.max_width)
+		this._style == 'fill' ? this.switch = 0 : this.switch = 2
+		if(this._max_width)
 		{
 			this.switch += 1
 		}
@@ -1452,26 +1459,26 @@
 
 	PROPERTY.Text.prototype.apply = function()
 	{
-	    cosmos2D.renderer.context.font = this.font_style+this.font_variant+this.font_weight+this.font_size+'px '+this.font_family
-	    cosmos2D.renderer.context.textAlign = this.text_align
-	    cosmos2D.renderer.context.textBaseline = this.text_baseline
+	    cosmos2D.renderer.context.font = this.font_style()+this.font_variant()+this.font_weight()+this.font_size()+'px '+this.font_family()
+	    cosmos2D.renderer.context.textAlign = this.text_align()
+	    cosmos2D.renderer.context.textBaseline = this.text_baseline()
 	    switch(this.switch)
 	    {
 	    	case 0:
-	    		cosmos2D.renderer.context.fillStyle = this.color
-				cosmos2D.renderer.context.fillText(this.text(), this.x, this.y)
+	    		cosmos2D.renderer.context.fillStyle = this.color()
+				cosmos2D.renderer.context.fillText(this.text(), this.x(), this.y())
 				break
 			case 1:
-	    		cosmos2D.renderer.context.fillStyle = this.color
-				cosmos2D.renderer.context.fillText(this.text(), this.x, this.y, this.max_width)
+	    		cosmos2D.renderer.context.fillStyle = this.color()
+				cosmos2D.renderer.context.fillText(this.text(), this.x(), this.y(), this.max_width())
 				break
 			case 2:
-	    		cosmos2D.renderer.context.strokeStyle = this.color
-				cosmos2D.renderer.context.strokeText(this.text(), this.x, this.y)
+	    		cosmos2D.renderer.context.strokeStyle = this.color()
+				cosmos2D.renderer.context.strokeText(this.text(), this.x(), this.y())
 				break
 			case 3:
-	    		cosmos2D.renderer.context.strokeStyle = this.color
-				cosmos2D.renderer.context.strokeText(this.text(), this.x, this.y, this.max_width)
+	    		cosmos2D.renderer.context.strokeStyle = this.color()
+				cosmos2D.renderer.context.strokeText(this.text(), this.x(), this.y(), this.max_width())
 				break
 	    }
 	}

@@ -86,7 +86,6 @@
 
 	PROPERTY.Bounding_box.prototype.render = function()
 	{
-		console.log('rendering box')
 		cosmos2D.renderer.context.save()
 		cosmos2D.renderer.context.beginPath()
 		cosmos2D.renderer.context.moveTo(this.bl_p().x, this.bl_p().y)

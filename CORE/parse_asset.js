@@ -9,7 +9,7 @@
 			value_binding: /^\w+\[\w+\]$/,
 			event_subscribing: /^\w+\(\w+\)$/
 		}
-
+		
 		// Parse values defined in asset
 		for(key in asset)
 		{
@@ -25,31 +25,40 @@
 			// Simple value binding makes value of another asset accesible via get/set function
 			if(parsers.value_binding.test(value))
 			{
-				var target_asset = /^\w+/.exec(value)[0]
+				var target_property = /^\w+/.exec(value)[0]
 				var target_attribute = /\w+/.exec(/\[.*\]/.exec(value)[0])[0]
 				// It has to be wrapped in ann. function to change scope, otherwise all
 				// parameters would be same
-				;(function(asset, target_entity, target_asset, target_attribute) {
+				;(function(asset, target_entity, target_property, target_attribute) {
 					asset[key] = function(value) {
 						if(value == undefined)
 						{
-							return target_entity[target_asset][target_attribute]
+							return target_entity[target_property][target_attribute]()
 						}
-						target_entity[target_asset][target_attribute] = value
+						target_entity[target_property][target_attribute](value)
 					}
-				})(this, target_entity, target_asset, target_attribute)
+				})(this, target_entity, target_property, target_attribute)
 			}
 			// Method value binding runs method when another asset's event is fired
 			else if(parsers.event_subscribing.test(value))
 			{
-				var target_asset = /^\w+/.exec(value)[0]
+				var target_property = /^\w+/.exec(value)[0]
 				var target_event = /\w+/.exec(/\(.*\)/.exec(value)[0])[0]
-				target_entity[target_asset][target_event].subscribe(this, key)
+				target_entity[target_property][target_event].subscribe(this, key)
 			}
 			// Add javascript primitives
 			else
 			{
-				this[key] = asset[key]
+				this['_'+key] = asset[key]
+				;(function(property, entity, property_id, key) {
+					property[key.substring(1)] = function(value) {
+						if(value == undefined)
+						{
+							return entity[property_id][key]
+						}
+						entity[property_id][key] = value
+					}
+				})(this, entity, asset.id, '_'+key)
 			}
 		}
 
@@ -59,7 +68,16 @@
 			// Add new values and initialize them to default
 			if(!this[key])
 			{
-				this[key] = initialization[key]
+				this['_'+key] = initialization[key]
+				;(function(property, entity, property_id, key) {
+					property[key.substring(1)] = function(value) {
+						if(value == undefined)
+						{
+							return entity[property_id][key]
+						}
+						entity[property_id][key] = value
+					}
+				})(this, entity, asset.id, '_'+key)
 			}
 			else
 			// If key is alredy defined instead of adding default value test present value against it's type
@@ -79,10 +97,10 @@
 						}
 					}
 					// If it is not a custom type then throw constrain violation error
-					if(is_not_special_type)
-					{
-						throw(Error('IN cosmos2D.parse_asset WITH [entity '+entity.id+'] [asset '+asset.id+']: value type constrain violation.'))
-					}
+					// if(is_not_special_type)
+					// {
+					// 	throw(Error('IN cosmos2D.parse_asset WITH [entity '+entity.id+'] [asset '+asset.id+']: value type constrain violation.'))
+					// }
 				}
 			}
 		}
