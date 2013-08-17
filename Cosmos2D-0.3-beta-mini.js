@@ -2,64 +2,64 @@
 {
     var ADT = cosmos2D.ADT = cosmos2D.ADT || new Object()
 
-    ADT.Quad_tree = function(scene_width, scene_height, capacity, max_depth)
+    ADT.Quad_tree = function(width, height, capacity, max_depth)
     {
-        this.scene_objects = new Array()
-        this.scene_width = scene_width
-        this.scene_height = scene_height
+        this.entities = new Array()
+        this.width = width
+        this.height = height
         this.capacity = capacity
         this.max_depth = max_depth
         this.collision_event_listeners = new Array()
-        this.root = new cosmos2D.ADT.Quad_tree.prototype.Inner_node(null, scene_width / 2, scene_height / 2, scene_width / 2, scene_height / 2)
+        this.root = new cosmos2D.ADT.Quad_tree.prototype.Inner_node(null, width / 2, height / 2, width / 2, height / 2)
         this.root.depth = 0
     }
 
     // Adds GO to the tree, optional parameter on_collision_method is GO's method name, which would be registered for on_collision_event
-    ADT.Quad_tree.prototype.add_scene_object = function(scene_object)
+    ADT.Quad_tree.prototype.add = function(entity)
     {
-        this.scene_objects.push(scene_object)
-        this.root.add_scene_object(this, scene_object)
+        this.entities.push(entity)
+        this.root.add(this, entity)
     }
 
     // Completely removes GO from tree, drops all registered event methods
-    ADT.Quad_tree.prototype.remove_scene_object = function(scene_object)
+    ADT.Quad_tree.prototype.remove = function(entity)
     {
-        var index = this.scene_objects.indexOf(scene_object)
+        var index = this.entities.indexOf(entity)
         if(index != -1)
         {
-            this.scene_objects.splice(index, 1)
+            this.entities.splice(index, 1)
         }
-        this.root.remove_scene_object(scene_object, this.root)
+        this.root.remove(entity, this.root)
     }
 
     // Renders quad tree structure visible
-    ADT.Quad_tree.prototype.render_scene_objects = function()
+    ADT.Quad_tree.prototype.render = function()
     {
-        for(var i = 0; i < this.scene_objects.length; i++)
+        for(var i = 0; i < this.entities.length; i++)
         {
-            this.scene_objects[i].render()
+            this.entities[i].render()
         }
     }
 
-    ADT.Quad_tree.prototype.quadrant_changed = function(scene_object)
+    ADT.Quad_tree.prototype.quadrant_changed = function(entity)
     {
         return true
     }
 
-    ADT.Quad_tree.prototype.update_scene_objects = function(time)
+    ADT.Quad_tree.prototype.update = function(time)
     {
-        for(var i = 0; i < this.scene_objects.length; i++)
+        for(var i = 0; i < this.entities.length; i++)
         {
             // tady by se to mohlo zlepsit teda...
-            this.root.remove_scene_object(this.scene_objects[i], this.root)
-            this.root.add_scene_object(this, this.scene_objects[i])
+            this.root.remove(this.entities[i], this.root)
+            this.root.add(this, this.entities[i])
         }
     }
 
     // Renders quad tree structure visible
-    ADT.Quad_tree.prototype.render_structure = function()
+    ADT.Quad_tree.prototype.show = function()
     {
-        this.root.render_structure(1)
+        this.root.show(1)
     }
 
     ADT.Quad_tree.prototype.Inner_node = function(parent_node, midpoint_x, midpoint_y, half_width, half_height)
@@ -86,10 +86,10 @@
     // |1 . 0
     // |. . .
     // |2 . 3
-    ADT.Quad_tree.prototype.Inner_node.prototype.intersected_quadrants = function(scene_object)
+    ADT.Quad_tree.prototype.Inner_node.prototype.intersected_quadrants = function(entity)
     {
         var quadrants = new Array()
-        if(scene_object.bounding_box.quad_tree_collision(
+        if(entity.bounding_box.quad_tree_collision(
             this.midpoint_x,
             this.midpoint_y,
             this.midpoint_x + this.half_width,
@@ -97,7 +97,7 @@
         {
             quadrants.push(0)
         }
-        if(scene_object.bounding_box.quad_tree_collision(
+        if(entity.bounding_box.quad_tree_collision(
             this.midpoint_x - this.half_width,
             this.midpoint_y,
             this.midpoint_x,
@@ -105,7 +105,7 @@
         {
             quadrants.push(1)
         }
-        if(scene_object.bounding_box.quad_tree_collision(
+        if(entity.bounding_box.quad_tree_collision(
             this.midpoint_x - this.half_width,
             this.midpoint_y + this.half_height,
             this.midpoint_x,
@@ -113,7 +113,7 @@
         {
             quadrants.push(2)
         }
-        if(scene_object.bounding_box.quad_tree_collision(
+        if(entity.bounding_box.quad_tree_collision(
             this.midpoint_x,
             this.midpoint_y + this.half_height,
             this.midpoint_x + this.half_width,
@@ -132,7 +132,7 @@
             {
                 return false // Does not contain only leaves
             }
-            if(this.nodes[i].scene_objects.length != 0)
+            if(this.nodes[i].entities.length != 0)
             {
                 return false // Leaf contains some GO
             }
@@ -141,34 +141,34 @@
     }
 
     // add scene recursively to children
-    ADT.Quad_tree.prototype.Inner_node.prototype.add_scene_object = function(tree, scene_object)
+    ADT.Quad_tree.prototype.Inner_node.prototype.add = function(tree, entity)
     {
-        var quadrants = this.intersected_quadrants(scene_object)
+        var quadrants = this.intersected_quadrants(entity)
         for(var i = 0; i < quadrants.length; i++)
         {
-            this.nodes[quadrants[i]].add_scene_object(tree, scene_object)
+            this.nodes[quadrants[i]].add(tree, entity)
         }
     }
 
     // If leaf reaches its capacity it must be replaced with inner node and splitted to his corresponding new quadrants (leafs)
     // this - parent of splitting leaf
     // splitting_leaf_node - leaf od this which is going to split
-    // scene_object - given new object
-    ADT.Quad_tree.prototype.Inner_node.prototype.split_leaf = function(tree, splitting_leaf_node, scene_object)
+    // entity - given new object
+    ADT.Quad_tree.prototype.Inner_node.prototype.split_leaf = function(tree, splitting_leaf_node, entity)
     {
         var quadrant = this.nodes.indexOf(splitting_leaf_node)
-        var scene_objects = this.nodes[quadrant].scene_objects
+        var entities = this.nodes[quadrant].entities
         var new_midpoint_x = this.midpoint_x + (this.quadrant_signs[quadrant][0] * this.half_width / 2)
         var new_midpoint_y = this.midpoint_y + (this.quadrant_signs[quadrant][1] * this.half_height / 2)
         this.nodes[quadrant] = new cosmos2D.ADT.Quad_tree.prototype.Inner_node(this, new_midpoint_x, new_midpoint_y, this.half_width / 2, this.half_height / 2)
-        for(var i = 0; i < scene_objects.length; i++)
+        for(var i = 0; i < entities.length; i++)
         {
-            this.nodes[quadrant].add_scene_object(tree, scene_objects[i])
+            this.nodes[quadrant].add(tree, entities[i])
         }
-        this.nodes[quadrant].add_scene_object(tree, scene_object)
+        this.nodes[quadrant].add(tree, entity)
     }
 
-    ADT.Quad_tree.prototype.Inner_node.prototype.render_structure = function(depth)
+    ADT.Quad_tree.prototype.Inner_node.prototype.show = function(depth)
     {
         cosmos2D.renderer.context.save()
         cosmos2D.renderer.context.beginPath()
@@ -189,16 +189,16 @@
 
         for(var i = 0; i < this.nodes.length; i++)
         {
-            this.nodes[i].render_structure(depth+1)
+            this.nodes[i].show(depth+1)
         }
     }
 
-    ADT.Quad_tree.prototype.Inner_node.prototype.remove_scene_object = function(scene_object)
+    ADT.Quad_tree.prototype.Inner_node.prototype.remove = function(entity)
     {
-            var quadrants = this.intersected_quadrants(scene_object)
+            var quadrants = this.intersected_quadrants(entity)
             for(var i = 0; i < quadrants.length; i++)
             {
-                this.nodes[quadrants[i]].remove_scene_object(scene_object)
+                this.nodes[quadrants[i]].remove(entity)
             }
             if(this.is_empty() && this.parent_node != null)
             {
@@ -213,51 +213,51 @@
     ADT.Quad_tree.prototype.Leaf_node = function(parent_node)
     {
         this.parent_node = parent_node
-        this.scene_objects = new Array()
+        this.entities = new Array()
     }
 
     ADT.Quad_tree.prototype.Leaf_node.prototype.is_full = function(capacity)
     {
-        return this.scene_objects.length >= capacity
+        return this.entities.length >= capacity
     }
 
     // Add scene to the leaf
-    ADT.Quad_tree.prototype.Leaf_node.prototype.add_scene_object = function(tree, scene_object)
+    ADT.Quad_tree.prototype.Leaf_node.prototype.add = function(tree, entity)
     {
-        for(var i = 0; i < this.scene_objects.length; i++)
+        for(var i = 0; i < this.entities.length; i++)
         {
-            if(this.scene_objects[i].bounding_box.bounding_box_collision(scene_object.bounding_box))
+            if(this.entities[i].bounding_box.bounding_box_collision(entity.bounding_box))
             {
-                scene_object.on_collision(this.scene_objects[i])
+                entity.on_collision(this.entities[i])
             }
         }
         if(this.is_full(tree.capacity))
         {
             if(this.parent_node.depth > tree.max_depth)
             {
-                console.log('scene full, undefined behaviour!', scene_object, tree.collision_event_listeners[scene_object])
+                console.log('scene full, undefined behaviour!', entity, tree.collision_event_listeners[entity])
             }
             else
             {
-                this.parent_node.split_leaf(tree, this, scene_object)
+                this.parent_node.split_leaf(tree, this, entity)
             }
         }
         else
         {
-            this.scene_objects.push(scene_object)
+            this.entities.push(entity)
         }
     }
 
-    ADT.Quad_tree.prototype.Leaf_node.prototype.render_structure = function()
+    ADT.Quad_tree.prototype.Leaf_node.prototype.show = function()
     {
     }
 
-    ADT.Quad_tree.prototype.Leaf_node.prototype.remove_scene_object = function(scene_object)
+    ADT.Quad_tree.prototype.Leaf_node.prototype.remove = function(entity)
     {
-        var index = this.scene_objects.indexOf(scene_object)
+        var index = this.entities.indexOf(entity)
         if(index != -1)
         {
-            this.scene_objects.splice(index, 1)
+            this.entities.splice(index, 1)
         }
     }
 
@@ -559,7 +559,6 @@
 		cosmos2D.renderer = new cosmos2D.CORE.Renderer()
 		cosmos2D.memory = new cosmos2D.CORE.Memory()
 		cosmos2D.loop = new cosmos2D.CORE.Loop()
-		cosmos2D.space = new cosmos2D.PHYSICS.Space()
 		cosmos2D.input = new cosmos2D.CORE.Input_listener()
 
 		// CORE services
@@ -1071,69 +1070,6 @@
 }(window.cosmos2D = window.cosmos2D || new Object()));
 (function(cosmos2D, undefined)
 {
-    var PHYSICS = cosmos2D.PHYSICS = cosmos2D.PHYSICS || new Object()
-
-	PHYSICS.Space = function()
-	{
-		this.canvas = cosmos2D.renderer.canvas
-	    this.scene = new cosmos2D.ADT.Quad_tree(this.canvas.width, this.canvas.height, 2, 10)
-		cosmos2D.loop.callback.subscribe(this, 'update_scene')
-	}
-
-	PHYSICS.Space.prototype.add = function(scene_object)
-	{
-	    this.scene.add_scene_object(scene_object)
-	}
-
-	PHYSICS.Space.prototype.remove = function(scene_object)
-	{
-	    this.scene.remove_scene_object(scene_object)
-	}
-
-	PHYSICS.Space.prototype.render_scene = function()
-	{
-	    this.scene.render_scene_objects()
-	}
-
-	PHYSICS.Space.prototype.update_scene = function(time)
-	{
-	    this.scene.update_scene_objects(time)
-	}
-
-	PHYSICS.Space.prototype.render_structure = function()
-	{
-	    this.scene.render_structure()
-	}
-
-	PHYSICS.Space.prototype.toggle_fullscreen = function()
-	{
-		if(!document.mozFullScreen && !document.webkitFullScreen)
-		{
-			if(this.canvas.mozRequestFullScreen)
-			{
-				this.canvas.mozRequestFullScreen()
-			}
-			else
-			{
-				this.canvas.webkitRequestFullScreen(Element.ALLOW_KEYBOARD_INPUT)
-			}
-		}
-		else
-		{
-			if(document.mozCancelFullScreen) 
-			{
-				document.mozCancelFullScreen()
-			} 
-			else 
-			{
-				document.webkitCancelFullScreen()
-			}
-		}
-	}
-
-}(window.cosmos2D = window.cosmos2D || new Object()));
-(function(cosmos2D, undefined)
-{
 	var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
 
 	PROPERTY.Animator = function(entity, asset)
@@ -1360,12 +1296,12 @@
 			draw: true
 		})
 		this.bounding_box = new cosmos2D.PHYSICS.Bounding_box(this, new cosmos2D.MATH.Vector2D(58, 64))
-		cosmos2D.space.add(this)
+		// cosmos2D.space.add(this)
 	}
 
 	PROPERTY.Physics.prototype.apply = function()
 	{
-		cosmos2D.space.render_structure()
+		// cosmos2D.space.render_structure()
 		this.bounding_box.draw()
 	}
 
@@ -1427,6 +1363,70 @@
 	PROPERTY.Position.prototype.apply = function()
 	{
 	    cosmos2D.renderer.context.translate(this.x, this.y)
+	}
+
+}(window.cosmos2D = window.cosmos2D || new Object()));
+(function(cosmos2D, undefined)
+{
+    var PROPERTY = cosmos2D.PROPERTY = cosmos2D.PROPERTY || new Object()
+
+	PROPERTY.Space = function(entity, asset)
+	{
+		this.parse_asset(entity, asset, {})
+		this.canvas = cosmos2D.renderer.canvas
+	    this.quad_tree = new cosmos2D.ADT.Quad_tree(this.canvas.width, this.canvas.height, 2, 10)
+		cosmos2D.loop.callback.subscribe(this, 'update')
+	}
+
+	PROPERTY.Space.prototype.add = function(entity)
+	{
+	    this.quad_tree.add(entity)
+	}
+
+	PROPERTY.Space.prototype.remove = function(entity)
+	{
+	    this.quad_tree.remove(entity)
+	}
+
+	PROPERTY.Space.prototype.render = function()
+	{
+	    this.quad_tree.render()
+	}
+
+	PROPERTY.Space.prototype.update = function(time)
+	{
+	    this.quad_tree.update(time)
+	}
+
+	PROPERTY.Space.prototype.show = function()
+	{
+	    this.quad_tree.show()
+	}
+
+	PROPERTY.Space.prototype.toggle_fullscreen = function()
+	{
+		if(!document.mozFullScreen && !document.webkitFullScreen)
+		{
+			if(this.canvas.mozRequestFullScreen)
+			{
+				this.canvas.mozRequestFullScreen()
+			}
+			else
+			{
+				this.canvas.webkitRequestFullScreen(Element.ALLOW_KEYBOARD_INPUT)
+			}
+		}
+		else
+		{
+			if(document.mozCancelFullScreen) 
+			{
+				document.mozCancelFullScreen()
+			} 
+			else 
+			{
+				document.webkitCancelFullScreen()
+			}
+		}
 	}
 
 }(window.cosmos2D = window.cosmos2D || new Object()));

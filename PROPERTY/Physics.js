@@ -10,12 +10,12 @@
 			draw: true
 		})
 		this.bounding_box = new cosmos2D.PHYSICS.Bounding_box(this, new cosmos2D.MATH.Vector2D(58, 64))
-		cosmos2D.space.add(this)
+		// cosmos2D.space.add(this)
 	}
 
 	PROPERTY.Physics.prototype.apply = function()
 	{
-		cosmos2D.space.render_structure()
+		// cosmos2D.space.render_structure()
 		this.bounding_box.draw()
 	}
 

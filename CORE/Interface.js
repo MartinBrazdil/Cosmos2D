@@ -6,7 +6,6 @@
 		cosmos2D.renderer = new cosmos2D.CORE.Renderer()
 		cosmos2D.memory = new cosmos2D.CORE.Memory()
 		cosmos2D.loop = new cosmos2D.CORE.Loop()
-		cosmos2D.space = new cosmos2D.PHYSICS.Space()
 		cosmos2D.input = new cosmos2D.CORE.Input_listener()
 
 		// CORE services
