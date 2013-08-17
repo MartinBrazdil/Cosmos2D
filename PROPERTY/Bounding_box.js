@@ -16,11 +16,14 @@
 	PROPERTY.Bounding_box.prototype.collision_system = function(collision_system)
 	{
 		return this
+<<<<<<< HEAD
 	}
 
 	PROPERTY.Bounding_box.prototype.on_collision = function(entity)
 	{
 		this.collision_event.fire()
+=======
+>>>>>>> dea8391c1f5923ae57779e1a0f80fca37725e985
 	}
 
 	PROPERTY.Bounding_box.prototype.bl_p = function()
