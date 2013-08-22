@@ -7,8 +7,8 @@
         this.parse_asset(entity, asset, {
             width: cosmos2D.renderer.canvas.width,
             height: cosmos2D.renderer.canvas.height,
-            capacity: 2,
-            max_depth: 2,
+            capacity: 10,
+            max_depth: 5,
         })
 
         this.entities = new Array()
@@ -45,9 +45,10 @@
     PROPERTY.Quad_tree.prototype.update = function(time)
     {
         entities = this.collect_event.fire()
+        this.root = new cosmos2D.PROPERTY.Quad_tree.prototype.Inner_node(null, this._width / 2, this._height / 2, this._width / 2, this._height / 2)
         for(var i = 0; i < entities.length; i++)
         {
-            this.root.remove(entities[i], this.root)
+            // this.root.remov(entities[i], this.root)
             this.root.add(this, entities[i])
         }
     }

@@ -2,23 +2,28 @@
 {
 	var CORE = cosmos2D.CORE = cosmos2D.CORE || new Object()
 
-	CORE.Entity = function(id, assets)
+	CORE.Entity = function(assets, id)
 	{
 		// Checking assets validity
-		if(assets === undefined || id === undefined)
+		if(assets === undefined)
 		{
-			throw(Error('Malformed assets!'))
+			throw(Error('Attempt to create entity with asset == undefined!'))
 		}
 
-		// Set id
-		this.id = id
-		this.assets = assets
+		// Memorize assets
+		// this.assets = assets
 
-		// this.time_callback = new cosmos2D.PROPERTY.Unordered_callback()
+		// If it has ID, track it by id
+		if(id != undefined)
+		{
+			// this.id = id
 
-		// Adding new entity into Teserakt for easy access
-		cosmos2D.memory.universe.insert(id, this)
+			// this.time_callback = new cosmos2D.PROPERTY.Unordered_callback()
 
+			// Adding new entity into Teserakt for easy access
+			cosmos2D.memory.universe.insert(id, this)
+		}
+		
 		// Creating entity's properties
 		for(asset in assets)
 		{
@@ -48,6 +53,26 @@
 
 		// Creating property while instantly binding it to entity
 		this[asset.id] = new constructor(this, asset)
+	}
+
+	CORE.Entity.prototype.destroy = function()
+	{
+		for(var member in myObject) delete myObject[member]
+	}
+
+	CORE.Entity.prototype.split = function(asset_ids)
+	{
+		console.log(this)
+		other = new cosmos2D.CORE.Entity({})
+		for(var property in this)
+		{
+			if(asset_ids.indexOf(property) != -1)
+			{
+				other[property] = this[property]
+				console.log(other)
+				delete this[property]
+			}
+		}
 	}
 
 	// MUTATION hashmap: property->exemplar

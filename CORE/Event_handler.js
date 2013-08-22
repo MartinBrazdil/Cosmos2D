@@ -41,7 +41,14 @@
 		responses.length = this.listeners.length
 		for(var i = 0; i < this.listeners.length; i++)
 		{
-			responses[i] = this.listeners[i].object[this.listeners[i].method].call(this.listeners[i].object, event)
+			if(this.listeners[i].object[this.listeners[i].method] != undefined)
+			{
+				responses[i] = this.listeners[i].object[this.listeners[i].method].call(this.listeners[i].object, event)
+			}
+			else
+			{
+				this.unsubscribe(this.listeners[i].object, this.listeners[i].method)
+			}
 		}
 		return responses
 	}

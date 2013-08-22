@@ -10,7 +10,8 @@
 			model: undefined,
 			pivot_x: 0,
 			pivot_y: 0,
-			rotation: undefined
+			rotation: undefined,
+			rotation_offset: 0
 		})
 	}
 
@@ -18,7 +19,8 @@
 	{
 		cosmos2D.renderer.context.save()
 	    cosmos2D.renderer.context.translate(this.x(), this.y())
-	    cosmos2D.renderer.context.rotate((this.rotation()*2*Math.PI)/360)
+	    var rotation = this.rotation()+this.rotation_offset()
+	    cosmos2D.renderer.context.rotate((rotation*2*Math.PI)/360)
 	    cosmos2D.renderer.context.drawImage(cosmos2D.memory.image(this.model()), -this.pivot_x(), -this.pivot_y())
 		cosmos2D.renderer.context.restore()
 	}

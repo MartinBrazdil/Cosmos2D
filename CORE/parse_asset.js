@@ -15,7 +15,7 @@
 		{
 			var value = asset[key]
 			var target_entity = entity
-			// If asset is bound to another entity set target entity	
+			// If asset is bound to another entity set target entity
 			if(parsers.entity_binding.test(value))
 			{
 				target_entity_id = /\w+/.exec(/^<\w+>/.exec(value)[0])[0]
